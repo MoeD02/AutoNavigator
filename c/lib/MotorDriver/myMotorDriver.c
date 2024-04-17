@@ -18,7 +18,8 @@
  */
 void motorInit(void)
 {
-    PCA9685_Init(DEFAULT_I2C_ADDRESS);
+    PCA9685_Init(FRONT_I2C_ADDRESS);
+    PCA9685_Init(BACK_I2C_ADDRESS);
     PCA9685_SetPWMFreq(DEFAULT_PWM_FREQ);
 }
 
