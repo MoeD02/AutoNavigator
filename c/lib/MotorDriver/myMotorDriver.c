@@ -30,11 +30,15 @@ void motorInit(void)
  * @param speed: rotation speed
  *
  */
-void motorOn(DIR direction, int speed)
+void motorOn(DIR direction, UBYTE motor, int speed)
 {
+    
     printf("Motor Speed = %d\r\n", speed);
     PCA9685_SetPwmDutyCycle(PWMA, speed);
-    if (direction == FORWARD)
+    PCA9685_SetPwmDutyCycle(PWMB, speed);
+    if (motor == MOTORA)
+    {    
+        if (direction == FORWARD)
     {
         printf("forward...\r\n");
         PCA9685_SetLevel(AIN1, 0);
@@ -46,13 +50,31 @@ void motorOn(DIR direction, int speed)
         PCA9685_SetLevel(AIN1, 1);
         PCA9685_SetLevel(AIN2, 0);
     }
+    }else{
+        if (direction == FORWARD)
+    {
+        printf("forward...\r\n");
+        PCA9685_SetLevel(BIN1, 1);
+        PCA9685_SetLevel(BIN2, 0);
+    }
+    else
+    {
+        printf("backward...\r\n");
+        PCA9685_SetLevel(BIN1, 0);
+        PCA9685_SetLevel(BIN2, 1);
+    }
+
+    }
 }
 
 /**
  * Motor stop rotation.
  *
  */
-void motorStop()
+void motorStop(UBYTE motor)
 {
-    PCA9685_SetPwmDutyCycle(PWMA, 0);
+    if(motor == MOTORA)
+    PCA9685_SetPwmDutyCycle(PWMA, 0);  
+    else
+    PCA9685_SetPwmDutyCycle(PWMB, 0);
 }

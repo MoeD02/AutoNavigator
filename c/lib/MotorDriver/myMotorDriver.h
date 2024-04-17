@@ -18,6 +18,10 @@
 #define PWMA PCA_CHANNEL_0
 #define AIN1 PCA_CHANNEL_1
 #define AIN2 PCA_CHANNEL_2
+#define BIN1 PCA_CHANNEL_3
+#define BIN2 PCA_CHANNEL_4
+#define PWMB PCA_CHANNEL_5
+
 
 #define FRONT_I2C_ADDRESS 0x40
 #define BACK_I2C_ADDRESS 0x54
@@ -25,6 +29,7 @@
 #define DEFAULT_PWM_FREQ 100
 
 #define MOTORA 0
+#define MOTORB 1 
 
 typedef enum
 {
@@ -33,7 +38,7 @@ typedef enum
 } DIR;
 
 void motorInit(void);
-void motorOn(DIR dir, int speed);
-void motorStop(void);
+void motorOn(DIR dir, UBYTE motor, int speed);
+void motorStop(UBYTE motor);
 
 #endif
