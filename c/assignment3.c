@@ -96,7 +96,7 @@ int main(void)
     motorOn(FORWARD, MOTORB, 100);
     sleep(35);
     motorStop(MOTORA);
-    motorStop(MOTORB)
+    motorStop(MOTORB);
     // while (1)
     // {
     //     int currentButtonState = gpioRead(BUTTON_PIN); // Read the button state
