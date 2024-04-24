@@ -22,14 +22,23 @@
 #define BIN2 PCA_CHANNEL_4
 #define PWMB PCA_CHANNEL_5
 
+#define PWMC PCA_CHANNEL_6
+#define CIN1 PCA_CHANNEL_7
+#define CIN2 PCA_CHANNEL_8
+#define DIN1 PCA_CHANNEL_9
+#define DIN2 PCA_CHANNEL_10
+#define PWMD PCA_CHANNEL_11
 
-#define FRONT_I2C_ADDRESS 0x40
+
+#define FRONT_I2C_ADDRESS 0x41
 #define BACK_I2C_ADDRESS 0x54
 
 #define DEFAULT_PWM_FREQ 100
 
 #define MOTORA 0
 #define MOTORB 1 
+#define MOTORC 2
+#define MOTORD 3
 
 typedef enum
 {

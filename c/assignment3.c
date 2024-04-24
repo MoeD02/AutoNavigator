@@ -25,7 +25,10 @@ void handler(int signal)
     // Print message indicating motor stop
     printf("Motor Stop\r\n");
     // Stop the motor
-    motorStop();
+    motorStop(MOTORA);
+    motorStop(MOTORB);
+    motorStop(MOTORC);
+    motorStop(MOTORD);
     // Clean up module resources
     DEV_ModuleExit();
     // Terminate GPIO library
@@ -94,9 +97,14 @@ int main(void)
     signal(SIGINT, handler);
     motorOn(FORWARD, MOTORA, 100);
     motorOn(FORWARD, MOTORB, 100);
+    motorOn(FORWARD, MOTORC, 100);
+    motorOn(FORWARD, MOTORD, 100);
+    
     sleep(35);
     motorStop(MOTORA);
     motorStop(MOTORB);
+    motorStop(MOTORC);
+    motorStop(MOTORD);
     // while (1)
     // {
     //     int currentButtonState = gpioRead(BUTTON_PIN); // Read the button state

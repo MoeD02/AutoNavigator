@@ -36,6 +36,9 @@ void motorOn(DIR direction, UBYTE motor, int speed)
     printf("Motor Speed = %d\r\n", speed);
     PCA9685_SetPwmDutyCycle(PWMA, speed);
     PCA9685_SetPwmDutyCycle(PWMB, speed);
+    PCA9685_SetPwmDutyCycle(PWMC, speed);
+    PCA9685_SetPwmDutyCycle(PWMD, speed);
+
     if (motor == MOTORA)
     {    
         if (direction == FORWARD)
@@ -43,12 +46,16 @@ void motorOn(DIR direction, UBYTE motor, int speed)
         printf("forward...\r\n");
         PCA9685_SetLevel(AIN1, 0);
         PCA9685_SetLevel(AIN2, 1);
+        PCA9685_SetLevel(CIN1, 0);
+        PCA9685_SetLevel(CIN2, 1);
     }
     else
     {
         printf("backward...\r\n");
         PCA9685_SetLevel(AIN1, 1);
         PCA9685_SetLevel(AIN2, 0);
+        PCA9685_SetLevel(CIN1, 0);
+        PCA9685_SetLevel(CIN2, 1);
     }
     }else{
         if (direction == FORWARD)
@@ -56,12 +63,16 @@ void motorOn(DIR direction, UBYTE motor, int speed)
         printf("forward...\r\n");
         PCA9685_SetLevel(BIN1, 1);
         PCA9685_SetLevel(BIN2, 0);
+        PCA9685_SetLevel(DIN1, 0);
+        PCA9685_SetLevel(DIN2, 1);
     }
     else
     {
         printf("backward...\r\n");
         PCA9685_SetLevel(BIN1, 0);
         PCA9685_SetLevel(BIN2, 1);
+        PCA9685_SetLevel(DIN1, 0);
+        PCA9685_SetLevel(DIN2, 1);
     }
 
     }
