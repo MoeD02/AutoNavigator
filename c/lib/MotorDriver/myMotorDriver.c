@@ -39,7 +39,7 @@ void motorOn(DIR direction, UBYTE motor, int speed)
     PCA9685_SetPwmDutyCycle(PWMC, speed);
     PCA9685_SetPwmDutyCycle(PWMD, speed);
 
-    if (motor == MOTORA)
+    if (motor == MOTORA || motor == MOTORC)
     {    
         if (direction == FORWARD)
     {
@@ -57,7 +57,7 @@ void motorOn(DIR direction, UBYTE motor, int speed)
         PCA9685_SetLevel(CIN1, 0);
         PCA9685_SetLevel(CIN2, 1);
     }
-    }else{
+    }else if (motor == MOTORB || motor == MOTORD){
         if (direction == FORWARD)
     {
         printf("forward...\r\n");
