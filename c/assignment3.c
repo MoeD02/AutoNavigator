@@ -33,6 +33,9 @@ int main(void)
     }
     signal(SIGINT, handler);
     signal(SIGTSTP, handler);
+    gpioSetMode(LEFT_LINE_PIN, PI_INPUT);
+    gpioSetMode(RIGHT_LINE_PIN, PI_INPUT);
+    gpioSetMode(FRONT_OBSTACLE_PIN, PI_INPUT);
     initStructs();
     // Initialize motor and set up GPIO pin 23 as input with pull-up resistor
     motorInit();
@@ -53,14 +56,14 @@ int main(void)
      while (!cleaned_up) {
         //straight line
         if(leftLine.val == 0 && rightLine.val == 0){
-            motorOn(FORWARD, MOTORA, 50);
-            motorOn(FORWARD, MOTORB, 50);
+            motorOn(FORWARD, MOTORA, 55);
+            motorOn(FORWARD, MOTORB, 55);
         }
         else if(leftLine.val != 0){
-            turnCar(MOTORB, leftLine);
+            turnCar(MOTORB, &leftLine);
         }
         else if(rightLine.val != 0){
-            turnCar(MOTORA, rightLine);
+            turnCar(MOTORA, &rightLine);
         }
     }
     
@@ -77,6 +80,7 @@ void *routine(void* arg){
     while(!cleaned_up){
         sensor->val = gpioRead(sensor->pin);
         usleep(100000);
+        printf("val: %d\n", sensor->val);
         }
 }
 
@@ -110,19 +114,20 @@ void initStructs(){
 }
 
 // turn car either left or right slowly: if turn right, stops motor left first.
-void turnCar(UBYTE motor, Sensor sensor){
+void turnCar(UBYTE motor, Sensor *sensor){
     UBYTE stopMotor;
     if(motor == MOTORA){
         stopMotor = MOTORB;
     }else{
         stopMotor = MOTORA;
     }
-    motorStop(stopMotor);
-    while (sensor.val == 1)
+    //motorStop(stopMotor);
+    motorOn(FORWARD, stopMotor, 10);
+    while (sensor->val == 1)
     {
-        motorOn(FORWARD, motor, 35);
-        printf("val: %d\n", sensor.val);
-        printf("pin: %d\n", sensor.pin);
+        motorOn(FORWARD, motor, 57);
+        printf("pin1: %d\n", sensor->pin);
+        
         usleep(1000);
     }
     

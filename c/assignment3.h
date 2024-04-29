@@ -41,5 +41,5 @@ static void handler(int signal);
 // Function prototypes
 void *routine(void* arg);
 void initStructs();
-void turnCar(UBYTE motor, Sensor sensor);
+void turnCar(UBYTE motor, Sensor *sensor);
 #endif
