@@ -72,6 +72,7 @@ static void PCA9685_SetPWM(UBYTE channel, UWORD on, UWORD off)
  *
  * Example:
  * PCA9685_Init(0x40);
+ 
  */
 void PCA9685_Init(char addr)
 {

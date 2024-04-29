@@ -18,109 +18,112 @@
  * ensuring a clean shutdown on program exit or interruption.
  **************************************************************/
 #include "assignment3.h"
-
-// Handler for SIGINT signal (Ctrl+C)
-void handler(int signal)
-{
-    // Print message indicating motor stop
-    printf("Motor Stop\r\n");
-    // Stop the motor
-    motorStop(MOTORA);
-    motorStop(MOTORB);
-    motorStop(MOTORC);
-    motorStop(MOTORD);
-    // Clean up module resources
-    DEV_ModuleExit();
-    // Terminate GPIO library
-    gpioTerminate();
-
-    // Exit program
-    exit(0);
-}
-
-// Function for button press events
-// void buttonFunction(int gpio, int level, uint32_t tick)
-// {
-//     // Check if the button press is detected (PI_LOW indicates pressed state)
-//     if (level == PI_LOW)
-//     {
-//         // Start the motor in forward direction at full speed
-//         printf("Motor forward at 100%%\r\n");
-//         motorOn(FORWARD, 100);
-//         // Wait for 2 seconds
-//         gpioSleep(PI_TIME_RELATIVE, 2, 0);
-
-//         // Loop to gradually decrease the motor speed to 15%
-//         for (int speed = 100; speed >= 15; speed -= 5)
-//         {
-//             motorOn(FORWARD, speed);
-//             // Pause for 100ms between each speed adjustment
-//             gpioSleep(PI_TIME_RELATIVE, 0, 100 * 1000);
-//         }
-
-//         // Stop the motor and notify
-//         printf("Motor stopping...\r\n");
-//         motorStop();
-//         // Wait for 1 second
-//         gpioSleep(PI_TIME_RELATIVE, 1, 0);
-
-//         // Loop to gradually increase the motor speed to maximum in reverse direction
-//         for (int speed = 0; speed <= 100; speed += 5)
-//         {
-//             motorOn(BACKWARD, speed);
-//             // Pause for 100ms between each speed adjustment
-//             gpioSleep(PI_TIME_RELATIVE, 0, 100 * 1000);
-//         }
-//     }
-// }
+volatile sig_atomic_t cleaned_up = 0;
 
 int main(void)
 {
     // Initialize system modules
     if (DEV_ModuleInit())
         exit(0); // Exit if initialization fails
-
     // Initialize GPIO library, exit with error if fails
     if (gpioInitialise() < 0)
     {
         fprintf(stderr, "pigpio initialization failed!\n");
         return 1;
     }
-    printf("\n\nPress button to start motor.\n");
-
+    signal(SIGINT, handler);
+    signal(SIGTSTP, handler);
+    initStructs();
     // Initialize motor and set up GPIO pin 23 as input with pull-up resistor
     motorInit();
-    gpioSetMode(BUTTON_PIN, PI_INPUT);
-    //gpioSetPullUpDown(BUTTON_PIN, PI_PUD_UP);
-
-    int initialButtonState = 1; // Assume button is not pressed initially
-    signal(SIGINT, handler);
-    motorOn(FORWARD, MOTORA, 100);
-    motorOn(FORWARD, MOTORB, 100);
-    motorOn(FORWARD, MOTORC, 100);
-    motorOn(FORWARD, MOTORD, 100);
+    pthread_t leftLineThread;
+    pthread_t rightLineThread;
+    pthread_t frontObstacleThread;
+    // start threads
+    pthread_create(&leftLineThread, NULL, routine, (void *)&leftLine);
+    pthread_create(&rightLineThread, NULL, routine, (void*)&rightLine);
+    pthread_create(&frontObstacleThread, NULL, routine, (void*)&frontObstacle);
+    // testing
+    // motorOn(FORWARD, MOTORB, 75);
+    // motorOn(BACKWARD, MOTORA, 5);
+    // sleep(5);
+    // motorStop(MOTORB);
+    // motorStop(MOTORA);
+    /////
+     while (!cleaned_up) {
+        //straight line
+        if(leftLine.val == 0 && rightLine.val == 0){
+            motorOn(FORWARD, MOTORA, 50);
+            motorOn(FORWARD, MOTORB, 50);
+        }
+        else if(leftLine.val != 0){
+            turnCar(MOTORB, leftLine);
+        }
+        else if(rightLine.val != 0){
+            turnCar(MOTORA, rightLine);
+        }
+    }
     
-    sleep(35);
-    motorStop(MOTORA);
-    motorStop(MOTORB);
-    motorStop(MOTORC);
-    motorStop(MOTORD);
-    // while (1)
-    // {
-    //     int currentButtonState = gpioRead(BUTTON_PIN); // Read the button state
-    //     if (currentButtonState == PI_LOW && initialButtonState == PI_HIGH)
-    //     {
-    //         // Button was just pressed
-    //         buttonFunction(BUTTON_PIN, currentButtonState, 0); // Call the function
-    //     }
-
-    //     initialButtonState = currentButtonState; // Update the previous state for the next loop iteration
-    //     gpioDelay(10000);
-    // }
-
     // Clean up resources on program exit
     DEV_ModuleExit();
     gpioTerminate();
 
     return 0;
+}
+
+void *routine(void* arg){
+    Sensor *sensor = (Sensor *)arg; 
+    // read pin for sensor indefinetly.
+    while(!cleaned_up){
+        sensor->val = gpioRead(sensor->pin);
+        usleep(100000);
+        }
+}
+
+// Handler for SIGINT signal (Ctrl+C)
+static void handler(int signal)
+{
+    printf("Motor Stop\r\n");
+    // Stop the motor
+    motorStop(MOTORA);
+    motorStop(MOTORB);
+    // change the flag to terminate loops and threads.
+    cleaned_up = 1;
+    printf("Interrupt... %d\n", signal);
+    // Clean up module resources
+    DEV_ModuleExit();
+    // Terminate GPIO library
+    gpioTerminate();
+    // Exit program
+    exit(0);
+}
+
+void initStructs(){
+    leftLine.pin = LEFT_LINE_PIN;
+    leftLine.val = 0; // 0 is no line
+    rightLine.pin = RIGHT_LINE_PIN;
+    rightLine.val = 0; // 0 is no line
+    frontObstacle.pin = FRONT_OBSTACLE_PIN;
+    frontObstacle.val = 1; // 1 is no obstacle
+    pthread_t lineThread;
+    pthread_t obstacleThread;
+}
+
+// turn car either left or right slowly: if turn right, stops motor left first.
+void turnCar(UBYTE motor, Sensor sensor){
+    UBYTE stopMotor;
+    if(motor == MOTORA){
+        stopMotor = MOTORB;
+    }else{
+        stopMotor = MOTORA;
+    }
+    motorStop(stopMotor);
+    while (sensor.val == 1)
+    {
+        motorOn(FORWARD, motor, 35);
+        printf("val: %d\n", sensor.val);
+        printf("pin: %d\n", sensor.pin);
+        usleep(1000);
+    }
+    
 }

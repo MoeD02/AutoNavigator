@@ -20,10 +20,26 @@
 #include <time.h>
 #include "DEV_Config.h"
 #include "myMotorDriver.h"
+#include <pthread.h>
 
-#define BUTTON_PIN 23
+#define LEFT_LINE_PIN 21
+#define RIGHT_LINE_PIN 17
+#define FRONT_OBSTACLE_PIN 27
 
-void handler(int signal);
-void buttonCallback(int gpio, int level, uint32_t tick);
+//struct for threads
+typedef struct {
+    int pin;
+    volatile short val;
+} Sensor;
 
+Sensor leftLine;
+Sensor rightLine;
+Sensor frontObstacle;
+
+static void handler(int signal);
+
+// Function prototypes
+void *routine(void* arg);
+void initStructs();
+void turnCar(UBYTE motor, Sensor sensor);
 #endif

@@ -18,7 +18,7 @@ CFLAGS += $(DEBUG)
 USELIB = USE_DEV_LIB
 DEBUG = -D $(USELIB) 
 ifeq ($(USELIB), USE_BCM2835_LIB)
-    LIB = -lbcm2835 -lm 
+    LIB = -lbcm2835 -lm -pthread 
 else ifeq ($(USELIB), USE_WIRINGPI_LIB)
     LIB = -lwiringPi -lm 
 endif
