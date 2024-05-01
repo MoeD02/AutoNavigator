@@ -44,8 +44,8 @@ int main(void)
     pthread_t frontObstacleThread;
     // start threads
     pthread_create(&leftLineThread, NULL, routine, (void *)&leftLine);
-    pthread_create(&rightLineThread, NULL, routine, (void*)&rightLine);
-    pthread_create(&frontObstacleThread, NULL, routine, (void*)&frontObstacle);
+    pthread_create(&rightLineThread, NULL, routine, (void *)&rightLine);
+    pthread_create(&frontObstacleThread, NULL, routine, (void *)&frontObstacle);
     // testing
     // motorOn(FORWARD, MOTORB, 75);
     // motorOn(BACKWARD, MOTORA, 5);
@@ -53,20 +53,24 @@ int main(void)
     // motorStop(MOTORB);
     // motorStop(MOTORA);
     /////
-     while (!cleaned_up) {
-        //straight line
-        if(leftLine.val == 0 && rightLine.val == 0){
-            motorOn(FORWARD, MOTORA, 55);
-            motorOn(FORWARD, MOTORB, 55);
+    while (!cleaned_up)
+    {
+        // straight line
+        if (leftLine.val == 0 && rightLine.val == 0)
+        {
+            motorOn(FORWARD, MOTORA, 60);
+            motorOn(FORWARD, MOTORB, 60);
         }
-        else if(leftLine.val != 0){
+        else if (leftLine.val != 0)
+        {
             turnCar(MOTORB, &leftLine);
         }
-        else if(rightLine.val != 0){
+        else if (rightLine.val != 0)
+        {
             turnCar(MOTORA, &rightLine);
         }
     }
-    
+
     // Clean up resources on program exit
     DEV_ModuleExit();
     gpioTerminate();
@@ -74,14 +78,16 @@ int main(void)
     return 0;
 }
 
-void *routine(void* arg){
-    Sensor *sensor = (Sensor *)arg; 
+void *routine(void *arg)
+{
+    Sensor *sensor = (Sensor *)arg;
     // read pin for sensor indefinetly.
-    while(!cleaned_up){
+    while (!cleaned_up)
+    {
         sensor->val = gpioRead(sensor->pin);
-        usleep(100000);
+        usleep(1000);
         printf("val: %d\n", sensor->val);
-        }
+    }
 }
 
 // Handler for SIGINT signal (Ctrl+C)
@@ -102,7 +108,8 @@ static void handler(int signal)
     exit(0);
 }
 
-void initStructs(){
+void initStructs()
+{
     leftLine.pin = LEFT_LINE_PIN;
     leftLine.val = 0; // 0 is no line
     rightLine.pin = RIGHT_LINE_PIN;
@@ -114,21 +121,24 @@ void initStructs(){
 }
 
 // turn car either left or right slowly: if turn right, stops motor left first.
-void turnCar(UBYTE motor, Sensor *sensor){
+void turnCar(UBYTE motor, Sensor *sensor)
+{
     UBYTE stopMotor;
-    if(motor == MOTORA){
+    if (motor == MOTORA)
+    {
         stopMotor = MOTORB;
-    }else{
+    }
+    else
+    {
         stopMotor = MOTORA;
     }
-    //motorStop(stopMotor);
-    motorOn(FORWARD, stopMotor, 10);
+    // motorStop(stopMotor);
+    motorOn(BACKWARD, stopMotor, 30);
     while (sensor->val == 1)
     {
-        motorOn(FORWARD, motor, 57);
+        motorOn(FORWARD, motor, 60);
         printf("pin1: %d\n", sensor->pin);
-        
+
         usleep(1000);
     }
-    
 }
