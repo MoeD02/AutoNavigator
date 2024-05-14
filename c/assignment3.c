@@ -144,37 +144,46 @@ void avoidObstacle()
     // first corner
     motorOn(BACKWARD, MOTORB, 30);
     motorOn(FORWARD, MOTORA, 60);
-    sleep(1);
+    usleep(900000);
 
-    while (sideObstacle.distance > 100)
-    {
-        motorOn(FORWARD, MOTORA, 40);
-        motorOn(FORWARD, MOTORB, 40);
-        printf("SIDE DISTANCE: %d\n", sideObstacle.distance);
-    } 
-
-    motorStop(MOTORA);
-    motorStop(MOTORB);
-    sleep(2);
-    
-    while (sideObstacle.distance < 80)
+    while (sideObstacle.distance > 30)
     {
         motorOn(FORWARD, MOTORA, 50);
         motorOn(FORWARD, MOTORB, 50);
-        if(sideObstacle.distance < 10){
-            printf("ADJUSTING\n");
-            motorOn(BACKWARD, MOTORA, 30);
-            motorOn(FORWARD, MOTORB, 60);
-            usleep(4000000);
-        }
-        if(sideObstacle.distance > 20){
-            printf("ADJUSTING\n");
-             motorOn(BACKWARD, MOTORB, 30);
-            motorOn(FORWARD, MOTORA, 60);
-            usleep(4000000);
-        }
+        printf("SIDE DISTANCE: %d\n", sideObstacle.distance);
     } 
-    sleep(3);
+
+    
+    
+    while (sideObstacle.distance < 40)
+    {
+        motorOn(FORWARD, MOTORA, 50);
+        motorOn(FORWARD, MOTORB, 50);
+        printf("SIDE DISTANCE: %d\n", sideObstacle.distance);
+        // motorOn(FORWARD, MOTORA, 50);
+        // motorOn(FORWARD, MOTORB, 50);
+        // if(sideObstacle.distance < 10){
+        //     printf("ADJUSTING\n");
+        //     motorOn(BACKWARD, MOTORA, 30);
+        //     motorOn(FORWARD, MOTORB, 60);
+        //     usleep(4000000);
+        // }
+        // if(sideObstacle.distance > 20){
+        //     printf("ADJUSTING\n");
+        //      motorOn(BACKWARD, MOTORB, 30);
+        //     motorOn(FORWARD, MOTORA, 60);
+        //     usleep(4000000);
+        // }
+    } 
+    sleep(1);
+    // second corner
+    motorOn(BACKWARD, MOTORB, 30);
+    motorOn(FORWARD, MOTORA, 60);
+    sleep(1);
+
+
+
+    //sleep(3);
 }
 
 void initStructs()
