@@ -18,58 +18,76 @@
  * ensuring a clean shutdown on program exit or interruption.
  **************************************************************/
 #include "assignment3.h"
+
 volatile sig_atomic_t cleaned_up = 0;
 
 int main(void)
 {
     // Initialize system modules
     if (DEV_ModuleInit())
+    {
         exit(0); // Exit if initialization fails
-    // Initialize GPIO library, exit with error if fails
+    }
+
+    // Initialize GPIO library, exit with error if it fails
     if (gpioInitialise() < 0)
     {
         fprintf(stderr, "pigpio initialization failed!\n");
         return 1;
     }
+
+    // Register signal handlers for clean exit
     signal(SIGINT, handler);
     signal(SIGTSTP, handler);
+
+    // Configure GPIO pins
     gpioSetMode(LEFT_LINE_PIN, PI_INPUT);
     gpioSetMode(RIGHT_LINE_PIN, PI_INPUT);
-    gpioSetMode(FRONT_OBSTACLE_PIN, PI_INPUT);
+
+    gpioSetMode(FRONT_OBSTACLE_ECHO, PI_INPUT);
+    gpioSetMode(FRONT_OBSTACLE_TRIG, PI_OUTPUT);
+
+    gpioSetMode(SIDE_OBSTACLE_ECHO, PI_INPUT);
+    gpioSetMode(SIDE_OBSTACLE_TRIG, PI_OUTPUT);
+
+    // Initialize sensors and motor driver
     initStructs();
-    // Initialize motor and set up GPIO pin 23 as input with pull-up resistor
     motorInit();
-    pthread_t leftLineThread;
-    pthread_t rightLineThread;
-    pthread_t frontObstacleThread;
-    // start threads
+
+    // Create and start threads for sensor routines
+    pthread_t leftLineThread, rightLineThread, frontObstacleThread, sideObstacleThread;
     pthread_create(&leftLineThread, NULL, routine, (void *)&leftLine);
     pthread_create(&rightLineThread, NULL, routine, (void *)&rightLine);
-    pthread_create(&frontObstacleThread, NULL, routine, (void *)&frontObstacle);
-    // testing
-    // motorOn(FORWARD, MOTORB, 75);
-    // motorOn(BACKWARD, MOTORA, 5);
-    // sleep(5);
-    // motorStop(MOTORB);
-    // motorStop(MOTORA);
-    /////
+    pthread_create(&frontObstacleThread, NULL, measureDistance, (void *)&frontObstacle);
+    pthread_create(&sideObstacleThread, NULL, measureDistance, (void *)&sideObstacle);
+
+    // Control loop to manage motor based on sensor inputs
     while (!cleaned_up)
     {
-        // straight line
-        if (leftLine.val == 0 && rightLine.val == 0)
+
+        if (frontObstacle.distance < 20 && frontObstacle.distance > 5)
         {
-            motorOn(FORWARD, MOTORA, 60);
-            motorOn(FORWARD, MOTORB, 60);
+            
+            avoidObstacle();
+        }
+        else if (leftLine.val == 0 && rightLine.val == 0)
+        {
+            motorOn(FORWARD, MOTORA, SPEED);
+            motorOn(FORWARD, MOTORB, SPEED);
         }
         else if (leftLine.val != 0)
         {
-            turnCar(MOTORB, &leftLine);
+            turnCar(MOTORB, &leftLine, 1);
         }
         else if (rightLine.val != 0)
         {
-            turnCar(MOTORA, &rightLine);
+            turnCar(MOTORA, &rightLine, 1);
         }
     }
+    pthread_join(leftLineThread, NULL);
+    pthread_join(rightLineThread, NULL);
+    pthread_join(frontObstacleThread, NULL);
+    pthread_join(sideObstacleThread, NULL);
 
     // Clean up resources on program exit
     DEV_ModuleExit();
@@ -78,67 +96,176 @@ int main(void)
     return 0;
 }
 
-void *routine(void *arg)
+void turnCar(UBYTE motor, Sensor *sensor, int triggered)
 {
-    Sensor *sensor = (Sensor *)arg;
-    // read pin for sensor indefinetly.
-    while (!cleaned_up)
-    {
-        sensor->val = gpioRead(sensor->pin);
-        usleep(1000);
-        printf("val: %d\n", sensor->val);
-    }
+ printf("LINE SENSOR, TURNING");
+    UBYTE stopMotor = (motor == MOTORA) ? MOTORB : MOTORA;
+    motorOn(BACKWARD, stopMotor, 30);
+   
+        while (sensor->val == triggered)
+        {
+            motorOn(FORWARD, motor, 60);
+            usleep(1000);
+        }
+      
 }
 
-// Handler for SIGINT signal (Ctrl+C)
-static void handler(int signal)
+void turnCarDistance(UBYTE motor, Sensor *sensor, int target)
 {
-    printf("Motor Stop\r\n");
-    // Stop the motor
+
+    UBYTE stopMotor = (motor == MOTORA) ? MOTORB : MOTORA;
+    motorOn(BACKWARD, stopMotor, 30);
+ 
+            while (sensor->distance > target)
+            {
+                motorOn(FORWARD, motor, 70);
+                usleep(1000);
+            }
+}
+
+void avoidObstacle()
+{
     motorStop(MOTORA);
     motorStop(MOTORB);
-    // change the flag to terminate loops and threads.
-    cleaned_up = 1;
-    printf("Interrupt... %d\n", signal);
-    // Clean up module resources
-    DEV_ModuleExit();
-    // Terminate GPIO library
-    gpioTerminate();
-    // Exit program
-    exit(0);
+    sleep(1);
+
+    //turn to its side
+    while (sideObstacle.distance > 17)
+    {
+        turnCarDistance(MOTORB, &sideObstacle, 30);
+    }
+
+    while (sideObstacle.distance < 50)
+    {
+        motorOn(FORWARD, MOTORA, 60);
+        motorOn(FORWARD, MOTORB, 60);
+    } 
+
+    // first corner
+    motorOn(BACKWARD, MOTORB, 30);
+    motorOn(FORWARD, MOTORA, 60);
+    sleep(1);
+
+    while (sideObstacle.distance > 100)
+    {
+        motorOn(FORWARD, MOTORA, 40);
+        motorOn(FORWARD, MOTORB, 40);
+        printf("SIDE DISTANCE: %d\n", sideObstacle.distance);
+    } 
+
+    motorStop(MOTORA);
+    motorStop(MOTORB);
+    sleep(2);
+    
+    while (sideObstacle.distance < 80)
+    {
+        motorOn(FORWARD, MOTORA, 50);
+        motorOn(FORWARD, MOTORB, 50);
+        if(sideObstacle.distance < 10){
+            printf("ADJUSTING\n");
+            motorOn(BACKWARD, MOTORA, 30);
+            motorOn(FORWARD, MOTORB, 60);
+            usleep(4000000);
+        }
+        if(sideObstacle.distance > 20){
+            printf("ADJUSTING\n");
+             motorOn(BACKWARD, MOTORB, 30);
+            motorOn(FORWARD, MOTORA, 60);
+            usleep(4000000);
+        }
+    } 
+    sleep(3);
 }
 
 void initStructs()
 {
+    // Initialize line sensors
     leftLine.pin = LEFT_LINE_PIN;
-    leftLine.val = 0; // 0 is no line
+    leftLine.val = 0;
     rightLine.pin = RIGHT_LINE_PIN;
-    rightLine.val = 0; // 0 is no line
-    frontObstacle.pin = FRONT_OBSTACLE_PIN;
-    frontObstacle.val = 1; // 1 is no obstacle
-    pthread_t lineThread;
-    pthread_t obstacleThread;
+    rightLine.val = 0;
+
+    // Initialize front obstacle sensor
+    frontObstacle.trigPin = FRONT_OBSTACLE_TRIG;
+    frontObstacle.echoPin = FRONT_OBSTACLE_ECHO;
+    frontObstacle.val = -1;
+
+    // Initialize side obstacle sensor
+    sideObstacle.trigPin = SIDE_OBSTACLE_TRIG;
+    sideObstacle.echoPin = SIDE_OBSTACLE_ECHO;
+    sideObstacle.val = -1;
 }
 
-// turn car either left or right slowly: if turn right, stops motor left first.
-void turnCar(UBYTE motor, Sensor *sensor)
+void *routine(void *arg)
 {
-    UBYTE stopMotor;
-    if (motor == MOTORA)
-    {
-        stopMotor = MOTORB;
-    }
-    else
-    {
-        stopMotor = MOTORA;
-    }
-    // motorStop(stopMotor);
-    motorOn(BACKWARD, stopMotor, 30);
-    while (sensor->val == 1)
-    {
-        motorOn(FORWARD, motor, 60);
-        printf("pin1: %d\n", sensor->pin);
+    Sensor *sensor = (Sensor *)arg;
 
+    while (!cleaned_up)
+    {
+        sensor->val = gpioRead(sensor->pin);
         usleep(1000);
     }
+
+    return NULL;
+}
+
+void *measureDistance(void *arg)
+{
+    Sensor *obstacleSensor = (Sensor *)arg;
+    int startTick, endTick, diffTick;
+
+    while (!cleaned_up)
+    {
+        // Ensure the trigger pin is low for a better first high pulse
+        gpioWrite(obstacleSensor->trigPin, 0);
+        gpioDelay(2);
+
+        // Send ultrasonic pulse
+        gpioWrite(obstacleSensor->trigPin, 1);
+        gpioDelay(10);
+        gpioWrite(obstacleSensor->trigPin, 0);
+
+        // Wait for the start of the echo signal
+        while (gpioRead(obstacleSensor->echoPin) == 0)
+            ;
+
+        startTick = gpioTick();
+
+        // Wait for the end of the echo signal
+        while (gpioRead(obstacleSensor->echoPin) == 1)
+            ;
+
+        endTick = gpioTick();
+
+        // Calculate distance in centimeters
+        diffTick = endTick - startTick;
+        obstacleSensor->distance = diffTick / 58;
+
+        usleep(100000); // Adjust delay for appropriate polling frequency
+        printf("DISTANCE: %d,    ", obstacleSensor->distance);
+        printf("PIN: %d\n", obstacleSensor->echoPin);
+    }
+
+    return NULL;
+}
+
+static void handler(int signal)
+{
+    printf("Motor Stop\r\n");
+
+    // Stop both motors
+    motorStop(MOTORA);
+    motorStop(MOTORB);
+
+    // Set flag to terminate loops and threads
+    cleaned_up = 1;
+
+    printf("Interrupt... %d\n", signal);
+
+    // Clean up module resources and terminate GPIO
+    DEV_ModuleExit();
+    gpioTerminate();
+
+    // Exit program
+    exit(0);
 }

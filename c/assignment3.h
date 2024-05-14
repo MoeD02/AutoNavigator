@@ -24,22 +24,35 @@
 
 #define LEFT_LINE_PIN 21
 #define RIGHT_LINE_PIN 17
-#define FRONT_OBSTACLE_PIN 27
+#define FRONT_OBSTACLE_ECHO 19
+#define FRONT_OBSTACLE_TRIG 9
+#define SIDE_OBSTACLE_ECHO 8
+#define SIDE_OBSTACLE_TRIG 23
+#define SPEED 65
 
-//struct for threads
-typedef struct {
+// struct for threads
+typedef struct
+{
     int pin;
+     int trigPin;
+    int echoPin;
+    volatile short distance;
     volatile short val;
 } Sensor;
+
 
 Sensor leftLine;
 Sensor rightLine;
 Sensor frontObstacle;
+Sensor sideObstacle;
 
 static void handler(int signal);
 
 // Function prototypes
-void *routine(void* arg);
+void *routine(void *arg);
+void *measureDistance(void *arg);
 void initStructs();
-void turnCar(UBYTE motor, Sensor *sensor);
+void turnCar(UBYTE motor, Sensor *sensor, int triggered);
+void turnCarDistance(UBYTE motor, Sensor *sensor, int triggered);
+void avoidObstacle();
 #endif
