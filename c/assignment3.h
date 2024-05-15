@@ -34,12 +34,11 @@
 typedef struct
 {
     int pin;
-     int trigPin;
+    int trigPin;
     int echoPin;
     volatile short distance;
     volatile short val;
 } Sensor;
-
 
 Sensor leftLine;
 Sensor rightLine;
@@ -55,4 +54,5 @@ void initStructs();
 void turnCar(UBYTE motor, Sensor *sensor, int triggered);
 void turnCarDistance(UBYTE motor, Sensor *sensor, int triggered);
 void avoidObstacle();
+void cleanup();
 #endif

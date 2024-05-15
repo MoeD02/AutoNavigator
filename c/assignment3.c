@@ -20,6 +20,7 @@
 #include "assignment3.h"
 
 volatile sig_atomic_t cleaned_up = 0;
+pthread_t leftLineThread, rightLineThread, frontObstacleThread, sideObstacleThread;
 
 int main(void)
 {
@@ -55,7 +56,6 @@ int main(void)
     motorInit();
 
     // Create and start threads for sensor routines
-    pthread_t leftLineThread, rightLineThread, frontObstacleThread, sideObstacleThread;
     pthread_create(&leftLineThread, NULL, routine, (void *)&leftLine);
     pthread_create(&rightLineThread, NULL, routine, (void *)&rightLine);
     pthread_create(&frontObstacleThread, NULL, measureDistance, (void *)&frontObstacle);
@@ -65,9 +65,9 @@ int main(void)
     while (!cleaned_up)
     {
 
-        if (frontObstacle.distance < 20 && frontObstacle.distance > 5)
+        if (frontObstacle.distance < 13 && frontObstacle.distance > 5)
         {
-            
+
             avoidObstacle();
         }
         else if (leftLine.val == 0 && rightLine.val == 0)
@@ -84,30 +84,69 @@ int main(void)
             turnCar(MOTORA, &rightLine, 1);
         }
     }
+
+    // Wait for threads to finish
     pthread_join(leftLineThread, NULL);
     pthread_join(rightLineThread, NULL);
     pthread_join(frontObstacleThread, NULL);
     pthread_join(sideObstacleThread, NULL);
 
+    return 0;
+}
+
+void handler(int signal)
+{
+    printf("Motor Stop\r\n");
+
+    // Stop both motors
+    motorStop(MOTORA);
+    motorStop(MOTORB);
+
+    printf("Interrupt... %d\n", signal);
+
+    // Perform cleanup
+    cleanup();
+
+    // Exit program
+    exit(0);
+}
+
+void cleanup()
+{
+    cleaned_up = 1;
+
+    pthread_cancel(leftLineThread);
+    pthread_cancel(rightLineThread);
+    pthread_cancel(frontObstacleThread);
+    pthread_cancel(sideObstacleThread);
+
+    printf("BEFORE THREAD 1\n");
+    pthread_join(leftLineThread, NULL);
+    printf("BEFORE THREAD 2\n");
+    pthread_join(rightLineThread, NULL);
+    printf("BEFORE THREAD 3\n");
+    pthread_join(frontObstacleThread, NULL);
+    printf("BEFORE THREAD 4\n");
+    pthread_join(sideObstacleThread, NULL);
+    printf("ALL DONE\n");
+
     // Clean up resources on program exit
     DEV_ModuleExit();
     gpioTerminate();
-
-    return 0;
+    printf("AFTER TERMINATES \n");
 }
 
 void turnCar(UBYTE motor, Sensor *sensor, int triggered)
 {
- printf("LINE SENSOR, TURNING");
+    printf("LINE SENSOR, TURNING");
     UBYTE stopMotor = (motor == MOTORA) ? MOTORB : MOTORA;
     motorOn(BACKWARD, stopMotor, 30);
-   
-        while (sensor->val == triggered)
-        {
-            motorOn(FORWARD, motor, 60);
-            usleep(1000);
-        }
-      
+
+    while (sensor->val == triggered)
+    {
+        motorOn(FORWARD, motor, 60);
+        usleep(1000);
+    }
 }
 
 void turnCarDistance(UBYTE motor, Sensor *sensor, int target)
@@ -115,12 +154,12 @@ void turnCarDistance(UBYTE motor, Sensor *sensor, int target)
 
     UBYTE stopMotor = (motor == MOTORA) ? MOTORB : MOTORA;
     motorOn(BACKWARD, stopMotor, 30);
- 
-            while (sensor->distance > target)
-            {
-                motorOn(FORWARD, motor, 70);
-                usleep(1000);
-            }
+
+    while (sensor->distance > target)
+    {
+        motorOn(FORWARD, motor, 70);
+        usleep(1000);
+    }
 }
 
 void avoidObstacle()
@@ -129,8 +168,8 @@ void avoidObstacle()
     motorStop(MOTORB);
     sleep(1);
 
-    //turn to its side
-    while (sideObstacle.distance > 17)
+    // turn to its side
+    while (sideObstacle.distance > 17 && !cleaned_up)
     {
         turnCarDistance(MOTORB, &sideObstacle, 30);
     }
@@ -139,27 +178,26 @@ void avoidObstacle()
     {
         motorOn(FORWARD, MOTORA, 60);
         motorOn(FORWARD, MOTORB, 60);
-    } 
+    }
 
     // first corner
     motorOn(BACKWARD, MOTORB, 30);
     motorOn(FORWARD, MOTORA, 60);
     usleep(900000);
 
-    while (sideObstacle.distance > 30)
+    // going straight 
+    while (sideObstacle.distance > 45 && !cleaned_up)
     {
         motorOn(FORWARD, MOTORA, 50);
         motorOn(FORWARD, MOTORB, 50);
-        printf("SIDE DISTANCE: %d\n", sideObstacle.distance);
-    } 
+        printf("SIDE DISTANCE1: %d\n", sideObstacle.distance);
+    }
 
-    
-    
-    while (sideObstacle.distance < 40)
+    while (sideObstacle.distance < 44)
     {
         motorOn(FORWARD, MOTORA, 50);
         motorOn(FORWARD, MOTORB, 50);
-        printf("SIDE DISTANCE: %d\n", sideObstacle.distance);
+        printf("SIDE DISTANCE2: %d\n", sideObstacle.distance);
         // motorOn(FORWARD, MOTORA, 50);
         // motorOn(FORWARD, MOTORB, 50);
         // if(sideObstacle.distance < 10){
@@ -174,16 +212,14 @@ void avoidObstacle()
         //     motorOn(FORWARD, MOTORA, 60);
         //     usleep(4000000);
         // }
-    } 
-    sleep(1);
+    }
+    //sleep(1);
     // second corner
     motorOn(BACKWARD, MOTORB, 30);
     motorOn(FORWARD, MOTORA, 60);
     sleep(1);
 
-
-
-    //sleep(3);
+    // sleep(3);
 }
 
 void initStructs()
@@ -235,13 +271,13 @@ void *measureDistance(void *arg)
         gpioWrite(obstacleSensor->trigPin, 0);
 
         // Wait for the start of the echo signal
-        while (gpioRead(obstacleSensor->echoPin) == 0)
+        while (gpioRead(obstacleSensor->echoPin) == 0 && !cleaned_up)
             ;
 
         startTick = gpioTick();
 
         // Wait for the end of the echo signal
-        while (gpioRead(obstacleSensor->echoPin) == 1)
+        while (gpioRead(obstacleSensor->echoPin) == 1 && !cleaned_up)
             ;
 
         endTick = gpioTick();
@@ -254,27 +290,5 @@ void *measureDistance(void *arg)
         printf("DISTANCE: %d,    ", obstacleSensor->distance);
         printf("PIN: %d\n", obstacleSensor->echoPin);
     }
-
     return NULL;
-}
-
-static void handler(int signal)
-{
-    printf("Motor Stop\r\n");
-
-    // Stop both motors
-    motorStop(MOTORA);
-    motorStop(MOTORB);
-
-    // Set flag to terminate loops and threads
-    cleaned_up = 1;
-
-    printf("Interrupt... %d\n", signal);
-
-    // Clean up module resources and terminate GPIO
-    DEV_ModuleExit();
-    gpioTerminate();
-
-    // Exit program
-    exit(0);
 }
