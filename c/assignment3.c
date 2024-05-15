@@ -65,7 +65,7 @@ int main(void)
     while (!cleaned_up)
     {
 
-        if (frontObstacle.distance < 13 && frontObstacle.distance > 5)
+        if (frontObstacle.distance < 14 && frontObstacle.distance > 5)
         {
 
             avoidObstacle();
@@ -183,7 +183,7 @@ void avoidObstacle()
     // first corner
     motorOn(BACKWARD, MOTORB, 30);
     motorOn(FORWARD, MOTORA, 60);
-    usleep(900000);
+    usleep(750000);
 
     // going straight 
     while (sideObstacle.distance > 45 && !cleaned_up)
@@ -217,7 +217,7 @@ void avoidObstacle()
     // second corner
     motorOn(BACKWARD, MOTORB, 30);
     motorOn(FORWARD, MOTORA, 60);
-    sleep(1);
+    usleep(750000);
 
     // sleep(3);
 }
