@@ -169,7 +169,7 @@ void avoidObstacle()
     sleep(1);
 
     // turn to its side
-    while (sideObstacle.distance > 17 && !cleaned_up)
+    while (sideObstacle.distance > 13 && !cleaned_up)
     {
         turnCarDistance(MOTORB, &sideObstacle, 30);
     }
@@ -185,7 +185,7 @@ void avoidObstacle()
     motorOn(FORWARD, MOTORA, 60);
     usleep(750000);
 
-    // going straight 
+    // going straight
     while (sideObstacle.distance > 45 && !cleaned_up)
     {
         motorOn(FORWARD, MOTORA, 50);
@@ -213,8 +213,8 @@ void avoidObstacle()
         //     usleep(4000000);
         // }
     }
-    //sleep(1);
-    // second corner
+    // sleep(1);
+    //  second corner
     motorOn(BACKWARD, MOTORB, 30);
     motorOn(FORWARD, MOTORA, 60);
     usleep(750000);
