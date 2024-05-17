@@ -39,5 +39,5 @@ typedef enum
 void motorInit(void);
 void motorOn(DIR dir, UBYTE motor, int speed);
 void motorStop(UBYTE motor);
-
+void avoidTurn(int tick);
 #endif

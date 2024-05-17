@@ -28,6 +28,7 @@
 #define FRONT_OBSTACLE_TRIG 9
 #define SIDE_OBSTACLE_ECHO 8
 #define SIDE_OBSTACLE_TRIG 23
+#define WHEEL_SENSOR 16
 #define SPEED 65
 
 // struct for threads

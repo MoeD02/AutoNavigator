@@ -65,7 +65,7 @@ int main(void)
     while (!cleaned_up)
     {
 
-        if (frontObstacle.distance < 14 && frontObstacle.distance > 5)
+        if (frontObstacle.distance < 17 && frontObstacle.distance > 5)
         {
 
             avoidObstacle();
@@ -94,6 +94,32 @@ int main(void)
     return 0;
 }
 
+void avoidTurn(int tick){
+    int pin = WHEEL_SENSOR;
+    gpioSetMode(WHEEL_SENSOR, PI_INPUT);
+    int val = 0;
+    motorOn(BACKWARD, MOTORB, 30);
+    motorOn(FORWARD, MOTORA, 60);
+    int flick = gpioRead(pin); // Initial read of the pin
+    int prevFlick = flick; // Store the initial state of flick
+
+    while(val < tick) {
+        flick = gpioRead(pin); // Read the current state of the pin
+        if(flick != prevFlick) { // Check if the state has changed
+            val++; // Increment val
+            prevFlick = flick; // Update the previous state
+            printf("val: %d\n",val);
+            
+        }
+    }
+        
+    // gpioDelay(1200);
+    printf("Turn Finished\n");
+    motorStop(MOTORA);
+    motorStop(MOTORB);
+    }
+
+
 void handler(int signal)
 {
     printf("Motor Stop\r\n");
@@ -120,20 +146,14 @@ void cleanup()
     pthread_cancel(frontObstacleThread);
     pthread_cancel(sideObstacleThread);
 
-    printf("BEFORE THREAD 1\n");
     pthread_join(leftLineThread, NULL);
-    printf("BEFORE THREAD 2\n");
     pthread_join(rightLineThread, NULL);
-    printf("BEFORE THREAD 3\n");
     pthread_join(frontObstacleThread, NULL);
-    printf("BEFORE THREAD 4\n");
     pthread_join(sideObstacleThread, NULL);
-    printf("ALL DONE\n");
 
     // Clean up resources on program exit
     DEV_ModuleExit();
     gpioTerminate();
-    printf("AFTER TERMINATES \n");
 }
 
 void turnCar(UBYTE motor, Sensor *sensor, int triggered)
@@ -181,18 +201,19 @@ void avoidObstacle()
     }
 
     // first corner
-    motorOn(BACKWARD, MOTORB, 30);
-    motorOn(FORWARD, MOTORA, 60);
-    usleep(750000);
-
-    // going straight
-    while (sideObstacle.distance > 45 && !cleaned_up)
+    avoidTurn(25);
+    usleep(500000);
+    motorOn(FORWARD, MOTORA, 50);
+    motorOn(FORWARD, MOTORB, 50);
+    // going straight, 
+    printf("Side distance after first turn: %d\n",sideObstacle.distance);
+    while (sideObstacle.distance > 100 && !cleaned_up)
     {
-        motorOn(FORWARD, MOTORA, 50);
-        motorOn(FORWARD, MOTORB, 50);
+        // motorOn(FORWARD, MOTORA, 50);
+        // motorOn(FORWARD, MOTORB, 50);
         printf("SIDE DISTANCE1: %d\n", sideObstacle.distance);
     }
-
+    printf("Side distance after obstical first turn: %d\n",sideObstacle.distance);
     while (sideObstacle.distance < 44)
     {
         motorOn(FORWARD, MOTORA, 50);
@@ -215,9 +236,8 @@ void avoidObstacle()
     }
     // sleep(1);
     //  second corner
-    motorOn(BACKWARD, MOTORB, 30);
-    motorOn(FORWARD, MOTORA, 60);
-    usleep(750000);
+    avoidTurn(25);
+    //usleep(750000);
 
     // sleep(3);
 }
@@ -287,8 +307,8 @@ void *measureDistance(void *arg)
         obstacleSensor->distance = diffTick / 58;
 
         usleep(100000); // Adjust delay for appropriate polling frequency
-        printf("DISTANCE: %d,    ", obstacleSensor->distance);
-        printf("PIN: %d\n", obstacleSensor->echoPin);
+        // printf("DISTANCE: %d,    ", obstacleSensor->distance);
+        // printf("PIN: %d\n", obstacleSensor->echoPin);
     }
     return NULL;
 }
