@@ -158,7 +158,7 @@ void cleanup()
 
 void turnCar(UBYTE motor, Sensor *sensor, int triggered)
 {
-    printf("LINE SENSOR, TURNING");
+    printf("LINE SENSOR, TURNING\n");
     UBYTE stopMotor = (motor == MOTORA) ? MOTORB : MOTORA;
     motorOn(BACKWARD, stopMotor, 30);
 
@@ -205,6 +205,7 @@ void avoidObstacle()
     usleep(500000);
     motorOn(FORWARD, MOTORA, 50);
     motorOn(FORWARD, MOTORB, 50);
+    usleep(3000000);
     // going straight, 
     printf("Side distance after first turn: %d\n",sideObstacle.distance);
     while (sideObstacle.distance > 100 && !cleaned_up)
@@ -236,7 +237,7 @@ void avoidObstacle()
     }
     // sleep(1);
     //  second corner
-    avoidTurn(25);
+    avoidTurn(23);
     //usleep(750000);
 
     // sleep(3);
