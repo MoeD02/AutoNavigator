@@ -1,12 +1,6 @@
 ## CSC615 Group Term Project
 
 ### Drive On
-## Video Demonstration
-
-Here is the demonstration video for our project:
-
-[Watch the video](./a5860c1736d14b2cadd3683550e29dc3.mp4)
-
 
 ## Flowchart of Code
 ```mermaid
