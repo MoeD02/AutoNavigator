@@ -1,8 +1,8 @@
-## CSC615 Group Term Project
+# CSC615 Group Term Project
 
-### Drive On
+## Drive On
 
-## Flowchart of Code
+### Flowchart of Code
 ```mermaid
 flowchart TD
     A[Start] --> B[Initialize system modules]
