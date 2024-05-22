@@ -14,6 +14,8 @@
 
 #include "DEV_Config.h"
 #include "PCA9685.h"
+#include <unistd.h> // For usleep function
+
 
 #define PWMA PCA_CHANNEL_0
 #define AIN1 PCA_CHANNEL_1

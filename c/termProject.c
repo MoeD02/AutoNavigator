@@ -4,29 +4,21 @@
  * Flores
  * Student ID: 922440815
  * Github-Name: gsnilloC
- * Project: Assignment 3 - Start Your Motors
+ * Project: Final Project
  *
  * File: termProject.c
  *
  * Description: This file is the main controller for the PI.
  * It utilizes threads to read from many pins, controlling
  * the turning of the car based of the values read from the
- * Sensors. It also manages going around an obstacle
+ * Sensors. It also manages going around an obstacle.
  **************************************************************/
 #include "termProject.h"
 
 volatile sig_atomic_t cleaned_up = 0;
+//threads for all the sensors
 pthread_t leftLineThread, rightLineThread, frontObstacleThread, sideObstacleThread;
 volatile int buttonPressed = 0;
-
-void buttonPressHandler(int gpio, int level, uint32_t tick)
-{
-    if (level == 0) // Assuming button press pulls the pin low
-    {
-        buttonPressed = 1;
-        printf("BUTTON PRESSED!\n");
-    }
-}
 
 int main(void)
 {
@@ -49,26 +41,22 @@ int main(void)
 
     // Configure the button pin
     gpioSetMode(BUTTON_PIN, PI_INPUT);
-    gpioSetPullUpDown(BUTTON_PIN, PI_PUD_UP); // Enable pull-up resistor
+    // Enable pull-up resistor
+    gpioSetPullUpDown(BUTTON_PIN, PI_PUD_UP); 
 
-    int initialButtonState = gpioRead(BUTTON_PIN);
-    printf("Initial button state: %d\n", initialButtonState);
     printf("Waiting for button press...\n");
 
     while (!buttonPressed)
     {
         int currentButtonState = gpioRead(BUTTON_PIN); // Read the button state
-        if (currentButtonState == PI_LOW && initialButtonState == PI_HIGH)
+        if (currentButtonState == PI_LOW)
         {
             // Button was just pressed
-            buttonPressHandler(BUTTON_PIN, currentButtonState, 0); // Call the handler
+            buttonPressed = 1;
+            printf("BUTTON PRESSED!\n");
         }
-
-        initialButtonState = currentButtonState; // Update the previous state for the next loop iteration
-        gpioDelay(10000);                        // 10 ms delay
+        gpioDelay(10000);// 10 ms delay
     }
-
-    printf("Button press detected. Starting motors...\n");
 
     // Configure GPIO pins
     gpioSetMode(LEFT_LINE_PIN, PI_INPUT);
@@ -94,22 +82,26 @@ int main(void)
     while (!cleaned_up)
     {
         printf("front obstacle distance: %d\n", frontObstacle.distance);
+        //if obstacle, forget about line sensing and avoid obstacle
         if (frontObstacle.distance < 17 && frontObstacle.distance > 5)
         {
             avoidObstacle();
         }
+        // sensors do not sense line: go straight
         else if (leftLine.val == 0 && rightLine.val == 0)
         {
             motorOn(FORWARD, MOTORA, SPEED);
             motorOn(FORWARD, MOTORB, SPEED);
         }
+        // turn left until sensor is clear
         else if (leftLine.val != 0)
         {
-            turnCar(MOTORB, &leftLine, 1);
+            turnCar(MOTORB, &leftLine);
         }
+        // turn right until sensor is clear
         else if (rightLine.val != 0)
         {
-            turnCar(MOTORA, &rightLine, 1);
+            turnCar(MOTORA, &rightLine);
         }
     }
 
@@ -122,6 +114,7 @@ int main(void)
     return 0;
 }
 
+//manages wheel turning for a specific amount
 void avoidTurn(int tick)
 {
     int pin = WHEEL_SENSOR;
@@ -142,13 +135,12 @@ void avoidTurn(int tick)
             printf("val: %d\n", val);
         }
     }
-
-    // gpioDelay(1200);
     printf("Turn Finished\n");
     motorStop(MOTORA);
     motorStop(MOTORB);
 }
 
+// interrupt handler, clean up libraries and join threads.
 void handler(int signal)
 {
     printf("Motor Stop\r\n");
@@ -158,7 +150,6 @@ void handler(int signal)
     motorStop(MOTORB);
 
     printf("Interrupt... %d\n", signal);
-
     // Perform cleanup
     cleanup();
 
@@ -186,22 +177,21 @@ void cleanup()
     gpioTerminate();
 }
 
-void turnCar(UBYTE motor, Sensor *sensor, int triggered)
+void turnCar(UBYTE motor, Sensor *sensor)
 {
     // printf("LINE SENSOR, TURNING\n");
     UBYTE stopMotor = (motor == MOTORA) ? MOTORB : MOTORA;
     motorOn(BACKWARD, stopMotor, 35);
 
-    while (sensor->val == triggered)
+    while (sensor->val == 1)
     {
-        motorOn(FORWARD, motor, 65);
+        motorOn(FORWARD, motor, SPEED);
         usleep(1000);
     }
 }
 
 void turnCarDistance(UBYTE motor, Sensor *sensor, int target)
 {
-
     UBYTE stopMotor = (motor == MOTORA) ? MOTORB : MOTORA;
     motorOn(BACKWARD, stopMotor, 30);
 
@@ -224,52 +214,30 @@ void avoidObstacle()
     {
         turnCarDistance(MOTORB, &sideObstacle, 30);
     }
-
+    // go straight until sensor's range is too large
     while (sideObstacle.distance < 50)
     {
         motorOn(FORWARD, MOTORA, 60);
         motorOn(FORWARD, MOTORB, 60);
     }
-
     // first corner
     avoidTurn(25);
+    //small wait for pins
     usleep(500000);
+    //straight
     motorOn(FORWARD, MOTORA, 50);
     motorOn(FORWARD, MOTORB, 50);
     usleep(3000000);
-    // going straight,
-    printf("Side distance after first turn: %d\n", sideObstacle.distance);
-    while (sideObstacle.distance > 100 && !cleaned_up)
-    {
-        // motorOn(FORWARD, MOTORA, 50);
-        // motorOn(FORWARD, MOTORB, 50);
-        printf("SIDE DISTANCE1: %d\n", sideObstacle.distance);
-    }
-    printf("Side distance after obstical first turn: %d\n", sideObstacle.distance);
+    // go straight until we need to turn for next corner
     while (sideObstacle.distance < 44)
     {
         motorOn(FORWARD, MOTORA, 55);
         motorOn(FORWARD, MOTORB, 55);
         printf("SIDE DISTANCE2: %d\n", sideObstacle.distance);
-        // motorOn(FORWARD, MOTORA, 50);
-        // motorOn(FORWARD, MOTORB, 50);
-        // if(sideObstacle.distance < 10){
-        //     printf("ADJUSTING\n");
-        //     motorOn(BACKWARD, MOTORA, 30);
-        //     motorOn(FORWARD, MOTORB, 60);
-        //     usleep(4000000);
-        // }
-        // if(sideObstacle.distance > 20){
-        //     printf("ADJUSTING\n");
-        //      motorOn(BACKWARD, MOTORB, 30);
-        //     motorOn(FORWARD, MOTORA, 60);
-        //     usleep(4000000);
-        // }
     }
-    // sleep(1);
     //  second corner
     avoidTurn(23);
-    // usleep(750000);
+    // go back in line the correct way
     while (leftLine.val == 0)
     {
         motorOn(FORWARD, MOTORA, 60);
@@ -277,10 +245,8 @@ void avoidObstacle()
     }
     while (leftLine.val == 1)
     {
-        turnCar(MOTORB, &leftLine, 1);
+        turnCar(MOTORB, &leftLine);
     }
-
-    // sleep(3);
 }
 
 void initStructs()
@@ -302,6 +268,7 @@ void initStructs()
     sideObstacle.val = -1;
 }
 
+// for line sensor and wheel sensor
 void *routine(void *arg)
 {
     Sensor *sensor = (Sensor *)arg;
@@ -314,9 +281,7 @@ void *routine(void *arg)
 
     return NULL;
 }
-
-#include <unistd.h> // For usleep function
-
+// thread function for sonic sensor
 void *measureDistance(void *arg)
 {
     Sensor *obstacleSensor = (Sensor *)arg;
@@ -332,14 +297,12 @@ void *measureDistance(void *arg)
         gpioTrigger(obstacleSensor->trigPin, 10, 1); // Changed to use gpioTrigger for sending pulse
 
         // Wait for the start of the echo signal
-        while (gpioRead(obstacleSensor->echoPin) == 0 && !cleaned_up)
-            ;
+        while (gpioRead(obstacleSensor->echoPin) == 0 && !cleaned_up);
 
         startTick = gpioTick();
 
         // Wait for the end of the echo signal
-        while (gpioRead(obstacleSensor->echoPin) == 1 && !cleaned_up)
-            ;
+        while (gpioRead(obstacleSensor->echoPin) == 1 && !cleaned_up);
 
         endTick = gpioTick();
 

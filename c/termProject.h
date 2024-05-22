@@ -55,7 +55,7 @@ static void handler(int signal);
 void *routine(void *arg);
 void *measureDistance(void *arg);
 void initStructs();
-void turnCar(UBYTE motor, Sensor *sensor, int triggered);
+void turnCar(UBYTE motor, Sensor *sensor);
 void turnCarDistance(UBYTE motor, Sensor *sensor, int triggered);
 void avoidObstacle();
 void cleanup();
