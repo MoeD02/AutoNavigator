@@ -1,13 +1,14 @@
 /**************************************************************
  * Class: CSC-615-01 Spring 2024
- * Name: Collins Gichohi
+ * Name: Collins Gichohi, Yakoub Alkabsh, Mohammad Dahbour, Diego 
+ * Flores
  * Student ID: 922440815
  * Github-Name: gsnilloC
- * Project: Assignment 3 - Start Your Motors
+ * Project: Final Project
  *
- * File: myMotorDriver.h
+ * File: myMotorDriver.c
  *
- * Description: Header file for myMotorDriver.c
+ * Description: All the necessary controls for the motors.
  **************************************************************/
 #include "myMotorDriver.h"
 #include "Debug.h"

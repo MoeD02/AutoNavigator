@@ -1,13 +1,15 @@
 /**************************************************************
  * Class: CSC-615-01 Spring 2024
- * Name: Collins Gichohi
+ * Name: Collins Gichohi, Yakoub Alkabsh, Mohammad Dahbour, Diego 
+ * Flores
  * Student ID: 922440815
  * Github-Name: gsnilloC
- * Project: Assignment 3 - Start Your Motors
+ * Project: Final Project
  *
- * File: termProject.c.h
+ * File: termProject.h
  *
- * Description: Header file for termProject.c.c
+ * Description: This file holds the function prototypes used in
+ * the main controller.
  **************************************************************/
 #ifndef __ASSIGNMENT3_H__
 #define __ASSIGNMENT3_H__
