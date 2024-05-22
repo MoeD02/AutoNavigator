@@ -5,9 +5,9 @@
  * Github-Name: gsnilloC
  * Project: Assignment 3 - Start Your Motors
  *
- * File: assignment3.h
+ * File: termProject.c.h
  *
- * Description: Header file for assignment3.c
+ * Description: Header file for termProject.c.c
  **************************************************************/
 #ifndef __ASSIGNMENT3_H__
 #define __ASSIGNMENT3_H__
@@ -28,6 +28,7 @@
 #define FRONT_OBSTACLE_TRIG 9
 #define SIDE_OBSTACLE_ECHO 8
 #define SIDE_OBSTACLE_TRIG 23
+#define BUTTON_PIN 22
 #define WHEEL_SENSOR 16
 #define SPEED 65
 
@@ -37,7 +38,9 @@ typedef struct
     int pin;
     int trigPin;
     int echoPin;
+    //for sonic sensor
     volatile short distance;
+    //for line sensor: true or false
     volatile short val;
 } Sensor;
 
